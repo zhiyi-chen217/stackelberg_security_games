@@ -79,11 +79,11 @@ class MarkovGameEnv(MultiAgentEnv):
         self.prisoner_x = 0
         self.prisoner_y = 0
 
-        self.guard_x = 2
-        self.guard_y = 2
+        self.guard_x = 4
+        self.guard_y = 4
 
-        self.escape_x = 1
-        self.escape_y = 1
+        self.escape_x = 2
+        self.escape_y = 2
 
         reset_state = -np.ones((5, 5))
         reset_state[0][0] = 0
@@ -94,8 +94,8 @@ class MarkovGameEnv(MultiAgentEnv):
         return infos
     def step(self, actions):
         # Execute actions
-        prisoner_action = actions["agent_0"]
-        guard_action = actions["agent_1"]
+        prisoner_action = actions["agent_1"]
+        guard_action = actions["agent_0"]
         self.current_step += 1
         if prisoner_action == 0 and self.prisoner_x > 0:
             self.prisoner_x -= 1
@@ -119,16 +119,16 @@ class MarkovGameEnv(MultiAgentEnv):
         terminations = {a: False for a in self.agents}
         rewards = {a: 0 for a in self.agents}
         if self.prisoner_x == self.guard_x and self.prisoner_y == self.guard_y:
-            rewards = {"agent_1": -1, "agent_0": 1}
+            rewards = {"agent_1": -10, "agent_0": 10}
             terminations = {a: True for a in self.agents}
 
         elif self.prisoner_x == self.escape_x and self.prisoner_y == self.escape_y:
-            rewards = {"agent_1": 1, "agent_0": -1}
+            rewards = {"agent_1": 10, "agent_0": -10}
             terminations = {a: True for a in self.agents}
 
         # Check truncation conditions (overwrites termination conditions)
         truncations = {a: False for a in self.agents}
-        if self.timestep > 100:
+        if self.timestep == self.episode_length - 1:
             rewards = {"agent_1": 0, "agent_0": 0}
             truncations = {"agent_1": True, "agent_0": True}
         self.timestep += 1
@@ -146,11 +146,7 @@ class MarkovGameEnv(MultiAgentEnv):
         infos = {a: {} for a in self.agents}
 
         if any(terminations.values()) or all(truncations.values()):
-            self.prisoner_x = 0
-            self.prisoner_y = 0
-
-            self.guard_x = 2
-            self.guard_y = 2
+            self.reset()
 
         return observations, rewards, {"__all__": True if self.current_step >= self.episode_length else False}, {}
     # def step(self, actions):

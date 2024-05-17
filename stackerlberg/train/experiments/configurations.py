@@ -14,6 +14,7 @@ from ray.rllib.models.torch.complex_input_net import ComplexInputNetwork
 from ray.rllib.models.torch.fcnet import FullyConnectedNetwork
 
 from stackerlberg.envs.matrix_game import named_matrix_games
+from stackerlberg.models.cnn_torch_model import CNNTorchModel
 from stackerlberg.models.custom_fully_connected_torch_network import (
     CustomFullyConnectedNetwork,
 )
@@ -124,7 +125,7 @@ experiment_configurations = {
             "leader_algorithm": PPO,
             "leader_policy_class": PPOTorchPolicy,
             "leader_config": {
-                "lr": 0.008,
+                "lr": 0.1,
                 "entropy_coeff": 0.0,
                 "min_sample_timesteps_per_iteration": 100,
                 "metrics_smoothing_episodes": 1,
@@ -153,7 +154,7 @@ experiment_configurations = {
                 },
             },
             "follower_config": {
-                "lr": 0.02,
+                "lr": 0.1,
                 "min_sample_timesteps_per_iteration": 100,
                 "metrics_smoothing_episodes": 1,
                 "rollout_fragment_length": 100,
@@ -186,7 +187,7 @@ experiment_configurations = {
                     "matrix_name": tune.grid_search(list(named_matrix_games.keys())),
                     "discrete_obs": True,
                     "small_memory": False,
-                    "episode_length": 10,
+                    "episode_length": 20,
                     "memory": True,
                     "n_q_episodes": 80,
                     "q_alpha": 0.01,

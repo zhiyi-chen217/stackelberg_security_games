@@ -118,9 +118,9 @@ class ThreadedMultiAgentEnv(MultiAgentEnv):
             (
                 id,
                 observations,
-                {agent: self._thr_rewards.pop(agent, 0) for agent in observations},
-                {agent: self._thr_dones.pop(agent, False) for agent in list(observations.keys()) + ["__all__"]},
-                {agent: self._thr_infos.pop(agent, {}) for agent in observations},
+                {agent: self._thr_rewards.get(agent, 0) for agent in observations},
+                {agent: self._thr_dones.get(agent, False) for agent in list(observations.keys()) + ["__all__"]},
+                {agent: self._thr_infos.get(agent, {}) for agent in observations},
             )
         )
         # Reset rewards and infos
