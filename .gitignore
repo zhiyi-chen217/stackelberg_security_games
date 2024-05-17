@@ -177,3 +177,4 @@ wandb/
 stackerlberg/train/rllib_reproduction.py
 plotting/wandb_api_key.py
 pretrain_checkpoint.pkl
+.idea

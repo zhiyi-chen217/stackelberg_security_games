@@ -1,6 +1,6 @@
 import numpy as np
 from ray.tune.registry import register_env as ray_register_env
-
+from stackerlberg.envs.markov_game import MarkovGameEnv
 from stackerlberg.envs.matrix_game import MatrixGameEnv, StochasticRewardWrapper
 from stackerlberg.envs.test_envs import ThreadedTestEnv, ThreadedTestWrapper
 from stackerlberg.wrappers.action_to_dist_wrapper import ActionToDistWrapper
@@ -247,7 +247,46 @@ def make_repeated_matrix_tabularq_env(
         env = DictToDiscreteObsWrapper(env, agent_id="agent_0")
     return env
 
+@register_env("markov_game_stackelberg_observed_queries")
+def make_markov_observed_queries_env(
+    episode_length: int = 10,
+    n_samples: int = 1,
+    samples_summarize: str = "list",
+    matrix_name: str = "prisoners_dilemma",
+    matrix: np.ndarray = [],
+    hypernetwork: bool = False,
+    discrete_obs: bool = False,
+    small_memory: bool = False,
+    tell_leader: bool = False,
+    tell_leader_mock: bool = False,
+    hidden_queries: bool = False,
+    _deepmind: bool = True,
+    _is_eval_env: bool = False,
+    **kwargs,
+):
 
+    env = MarkovGameEnv(episode_length=episode_length, memory=True, small_memory=small_memory)
+    if small_memory:
+        qu = {"q0": 0, "q1": 1, "q2": 2}
+    else:
+        qu = {"q0": 0, "q1": 1, "q2": 2, "q3": 3, "q4": 4}
+    env = ObservedQueriesWrapper(
+        env,
+        leader_agent_id="agent_0",
+        queries=qu,
+        n_samples=n_samples,
+        samples_summarize=samples_summarize,
+        tell_leader=tell_leader,
+        tell_leader_mock=tell_leader_mock,
+        hidden_queries=hidden_queries,
+    )
+    if discrete_obs:
+        env = DictToDiscreteObsWrapper(env, agent_id="agent_1")
+        if tell_leader:
+            env = DictToDiscreteObsWrapper(env, agent_id="agent_0")
+    if hypernetwork:
+        env = RepeatedMatrixHypernetworkWrapper(env)
+    return env
 @register_env("repeated_matrix_game_stackelberg_observed_queries")
 def make_repeated_matrix_observed_queries_env(
     episode_length: int = 10,

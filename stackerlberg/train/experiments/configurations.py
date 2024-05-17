@@ -106,6 +106,78 @@ experiment_configurations = {
         },
         "success_condition": lambda results: results["leader_results"]["evaluation"]["policy_reward_mean"]["agent_0"] >= 6.0,
     },
+    "ipd_markov_ppo_pg": {
+        "configuration": {
+            "common_config": {
+                "env": "markov_game_stackelberg_observed_queries",
+                "env_config": {
+                    "discrete_obs": True,
+                    "small_memory": False,
+                    "episode_length": 10,
+                    "memory": False,
+                },
+                "batch_mode": "complete_episodes",
+            },
+            "seed": tune.grid_search([1, 2, 3, 4, 5]),
+            "deterministic_leader": True,
+            "deterministic_follower": True,
+            "leader_algorithm": PPO,
+            "leader_policy_class": PPOTorchPolicy,
+            "leader_config": {
+                "lr": 0.008,
+                "entropy_coeff": 0.0,
+                "min_sample_timesteps_per_iteration": 100,
+                "metrics_smoothing_episodes": 1,
+                "rollout_fragment_length": 1000,
+                "train_batch_size": 1000,
+                "sgd_minibatch_size": 1000,
+                "evaluation_interval": 1,
+                "evaluation_duration": 10,
+                "evaluation_duration_unit": "episodes",
+                "learning_starts": 0,
+            },
+            "leader_policy_config": {
+                "model": {
+                    "fcnet_hiddens": [],
+                    "vf_share_layers": True,
+                    "custom_model": LinearTorchModel,
+                },
+            },
+            "follower_algorithm": PG,
+            "follower_policy_class": PGTorchPolicy,
+            "follower_policy_config": {
+                "model": {
+                    "fcnet_hiddens": [],
+                    "vf_share_layers": True,
+                    "custom_model": LinearTorchModel,
+                },
+            },
+            "follower_config": {
+                "lr": 0.02,
+                "min_sample_timesteps_per_iteration": 100,
+                "metrics_smoothing_episodes": 1,
+                "rollout_fragment_length": 100,
+                "train_batch_size": 100,
+                "evaluation_interval": 1,
+                "evaluation_duration": 10,
+                "evaluation_duration_unit": "episodes",
+                "learning_starts": 0,
+            },
+            "pre_training_iterations": 10,
+            "pre_training_stop_on_optimal": True,
+            "inner_iterations_follower": 0,
+            "inner_iterations_leader": 1,
+            "outer_iterations": 500,
+            "post_training_iterations": 50,
+            "randomize_leader": True,
+            "pretrain_save_checkpoint": "auto",
+            # "_debug_dont_train_leader": True,
+            "callbacks": {
+            },
+            "log_weights": True,
+        },
+        "success_condition": lambda results: results["leader_results"]["evaluation"]["policy_reward_mean"]["agent_0"] > 0,
+    },
     "ipd_allmatrices_ppo_tabularq": {
         "configuration": {
             "common_config": {
@@ -644,6 +716,220 @@ experiment_configurations = {
             "log_weights": True,
         },
         "success_condition": lambda results: results["leader_results"]["evaluation"]["policy_reward_mean"]["agent_0"] >= 6.0,
+        "hyperopt_searchspace": {
+            "leader_config": {
+                "lr": tune.loguniform(0.00001, 1.0),
+                # "rollout_fragment_length": tune.choice([1, 2, 4, 8, 16, 32, 64]),
+                # "exploration_config": {"final_epsilon": tune.loguniform(0.01, 1.0)},
+            },
+        },
+        "hyperopt_startingpoints": [
+            {
+                "leader_config": {
+                    "lr": 0.008,
+                    # "exploration_config": {"final_epsilon": 0.2},
+                },
+            },
+            {
+                "leader_config": {
+                    "lr": 0.015,
+                    # "exploration_config": {"final_epsilon": 0.2},
+                },
+            },
+            {
+                "leader_config": {
+                    "lr": 0.03,
+                    # "exploration_config": {"final_epsilon": 0.2},
+                },
+            },
+            {
+                "leader_config": {
+                    "lr": 0.004,
+                    # "exploration_config": {"final_epsilon": 0.2},
+                },
+            },
+        ],
+        "hyperopt_metric": "leader_results/evaluation/policy_reward_mean/agent_0",
+        "hyperopt_seeds": 10,
+    },
+    "smipd_leadernomemory_pg_pg": {
+        "configuration": {
+            "common_config": {
+                "env": "repeated_matrix_game_stackelberg_observed_queries",
+                "env_config": {
+                    "matrix_name": "prisoners_dilemma",
+                    "discrete_obs": True,
+                    "small_memory": True,
+                    "episode_length": 5,
+                    "memory": True,
+                    "tell_leader": False,
+                },
+                "batch_mode": "complete_episodes",
+            },
+            "deterministic_leader": True,
+            "deterministic_follower": True,
+            "leader_algorithm": PG,
+            "leader_policy_class": PGTorchPolicy,
+            "leader_config": {
+                "lr": 0.008,
+                "min_sample_timesteps_per_iteration": 100,
+                "metrics_smoothing_episodes": 1,
+                "rollout_fragment_length": 100,
+                "train_batch_size": 100,
+                "evaluation_interval": 1,
+                "evaluation_duration": 10,
+                "evaluation_duration_unit": "episodes",
+                "learning_starts": 0,
+            },
+            "leader_policy_config": {
+                "model": {
+                    "fcnet_hiddens": [],
+                    "vf_share_layers": True,
+                    "custom_model": LinearTorchModel,
+                },
+            },
+            "follower_algorithm": PG,
+            "follower_policy_class": PGTorchPolicy,
+            "follower_policy_config": {
+                "model": {
+                    "fcnet_hiddens": [],
+                    "vf_share_layers": True,
+                    "custom_model": LinearTorchModel,
+                },
+            },
+            "follower_config": {
+                "lr": 0.02,
+                "min_sample_timesteps_per_iteration": 100,
+                "metrics_smoothing_episodes": 1,
+                "rollout_fragment_length": 100,
+                "train_batch_size": 100,
+                "evaluation_interval": 1,
+                "evaluation_duration": 10,
+                "evaluation_duration_unit": "episodes",
+                "learning_starts": 0,
+            },
+            "pre_training_iterations": 500,
+            "inner_iterations_follower": 0,
+            "inner_iterations_leader": 1,
+            "outer_iterations": 2000,
+            "post_training_iterations": 50,
+            "randomize_leader": True,
+            # "_debug_dont_train_leader": True,
+            "callbacks": {
+                "post-pretrain": [smipd_check_follower_best_response],
+                "config": [lambda **kwargs: kwargs["pretrain_config"]["env_config"].update({"tell_leader_mock": True})],
+            },
+            "log_weights": True,
+        },
+        "success_condition": lambda results: results["leader_results"]["evaluation"]["policy_reward_mean"][
+                                                 "agent_0"] >= 6.0,
+        "hyperopt_searchspace": {
+            "leader_config": {
+                "lr": tune.loguniform(0.00001, 1.0),
+                # "rollout_fragment_length": tune.choice([1, 2, 4, 8, 16, 32, 64]),
+                # "exploration_config": {"final_epsilon": tune.loguniform(0.01, 1.0)},
+            },
+        },
+        "hyperopt_startingpoints": [
+            {
+                "leader_config": {
+                    "lr": 0.008,
+                    # "exploration_config": {"final_epsilon": 0.2},
+                },
+            },
+            {
+                "leader_config": {
+                    "lr": 0.015,
+                    # "exploration_config": {"final_epsilon": 0.2},
+                },
+            },
+            {
+                "leader_config": {
+                    "lr": 0.03,
+                    # "exploration_config": {"final_epsilon": 0.2},
+                },
+            },
+            {
+                "leader_config": {
+                    "lr": 0.004,
+                    # "exploration_config": {"final_epsilon": 0.2},
+                },
+            },
+        ],
+        "hyperopt_metric": "leader_results/evaluation/policy_reward_mean/agent_0",
+        "hyperopt_seeds": 10,
+    },
+    "smipd_leadernomemory_markov_pg_pg": {
+        "configuration": {
+            "common_config": {
+                "env": "markov_game_stackelberg_observed_queries",
+                "env_config": {
+                    "matrix_name": "prisoner_guard",
+                    "discrete_obs": True,
+                    "small_memory": False,
+                    "episode_length": 5,
+                    "memory": False,
+                    "tell_leader": False,
+                },
+                "batch_mode": "complete_episodes",
+            },
+            "deterministic_leader": True,
+            "deterministic_follower": True,
+            "leader_algorithm": PG,
+            "leader_policy_class": PGTorchPolicy,
+            "leader_config": {
+                "lr": 0.008,
+                "min_sample_timesteps_per_iteration": 100,
+                "metrics_smoothing_episodes": 1,
+                "rollout_fragment_length": 100,
+                "train_batch_size": 100,
+                "evaluation_interval": 1,
+                "evaluation_duration": 10,
+                "evaluation_duration_unit": "episodes",
+                "learning_starts": 0,
+            },
+            "leader_policy_config": {
+                "model": {
+                    "fcnet_hiddens": [],
+                    "vf_share_layers": True,
+                    "custom_model": LinearTorchModel,
+                },
+            },
+            "follower_algorithm": PG,
+            "follower_policy_class": PGTorchPolicy,
+            "follower_policy_config": {
+                "model": {
+                    "fcnet_hiddens": [],
+                    "vf_share_layers": True,
+                    "custom_model": LinearTorchModel,
+                },
+            },
+            "follower_config": {
+                "lr": 0.02,
+                "min_sample_timesteps_per_iteration": 100,
+                "metrics_smoothing_episodes": 1,
+                "rollout_fragment_length": 100,
+                "train_batch_size": 100,
+                "evaluation_interval": 1,
+                "evaluation_duration": 10,
+                "evaluation_duration_unit": "episodes",
+                "learning_starts": 0,
+            },
+            "pre_training_iterations": 500,
+            "inner_iterations_follower": 0,
+            "inner_iterations_leader": 1,
+            "outer_iterations": 2000,
+            "post_training_iterations": 50,
+            "randomize_leader": True,
+            # "_debug_dont_train_leader": True,
+            "callbacks": {
+                "post-pretrain": [smipd_check_follower_best_response],
+                "config": [lambda **kwargs: kwargs["pretrain_config"]["env_config"].update({"tell_leader_mock": True})],
+            },
+            "log_weights": True,
+        },
+        "success_condition": lambda results: results["leader_results"]["evaluation"]["policy_reward_mean"][
+                                                 "agent_0"] >= 6.0,
         "hyperopt_searchspace": {
             "leader_config": {
                 "lr": tune.loguniform(0.00001, 1.0),

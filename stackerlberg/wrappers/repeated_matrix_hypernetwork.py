@@ -31,7 +31,7 @@ class RepeatedMatrixHypernetworkWrapper(ThreadedMultiAgentWrapper):
         self.discrete = discrete
         assert isinstance(self.observation_space[leader_agent_id], spaces.Discrete)
         assert isinstance(self.action_space[leader_agent_id], spaces.Discrete)
-        assert self.action_space[leader_agent_id].n == 2
+        # assert self.action_space[leader_agent_id].n == 2
         if self.discrete:
             self.action_space[leader_agent_id] = spaces.MultiBinary(self.observation_space[leader_agent_id].n)
         else:

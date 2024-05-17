@@ -40,7 +40,7 @@ def run_experiment(
             wandb_project = experiment
         if wandb_group == "auto":
             wandb_group = experiment
-
+        os.environ["WANDB_API_KEY"] = "02be41c96ea693d56dbdc03ee7c964bb9b645651"
         # Set up Weights And Biases logging if API key is set in environment variable.
         if "WANDB_API_KEY" in os.environ:
             callbacks = [
@@ -51,7 +51,7 @@ def run_experiment(
                     log_config=True,
                     resume=False,
                     # name="test_ipd_cluster",
-                    # dir="./ray_results/wandb/",
+                    dir="./ray_results/wandb/",
                     group=wandb_group,
                 )
             ]
@@ -162,7 +162,7 @@ if __name__ == "__main__":
     run_experiment(
         experiment=cli_args.experiment,
         ray_num_cpus=cli_args.ray_num_cpus,
-        ray_local_mode=cli_args.ray_local_mode,
+        ray_local_mode=True,
         wandb_project=cli_args.wandb_project,
         wandb_group=cli_args.wandb_group,
         hyperopt=cli_args.hyperopt,

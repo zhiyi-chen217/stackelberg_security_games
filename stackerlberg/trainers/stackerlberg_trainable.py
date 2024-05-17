@@ -5,6 +5,7 @@ import threading
 from typing import TYPE_CHECKING, Dict, Optional, Tuple, Union
 
 import numpy as np
+import ray
 from ray.rllib.algorithms.a2c.a2c import A2C
 from ray.rllib.algorithms.callbacks import DefaultCallbacks, MultiCallbacks
 from ray.rllib.algorithms.dqn.dqn import DQN
@@ -188,7 +189,6 @@ def stackerlberg_trainable(config):
         follower_trainer = follower_trainer_cls(config=follower_config)
         pre_trainer = follower_trainer_cls(config=pretrain_config)
         post_trainer = follower_trainer_cls(config=posttrain_config)
-
         # Start with empty results.
         results = {}
 
