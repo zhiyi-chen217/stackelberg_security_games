@@ -10,6 +10,7 @@ from stackerlberg.wrappers.observed_queries_wrapper import ObservedQueriesWrappe
 from stackerlberg.wrappers.repeated_matrix_hypernetwork import (
     RepeatedMatrixHypernetworkWrapper,
 )
+from stackerlberg.wrappers.dict_to_image_obs_wrapper import DictToGridObsWrapper
 from stackerlberg.wrappers.tabularq_wrapper import TabularQWrapper
 
 registered_environments = {}
@@ -264,12 +265,30 @@ def make_markov_observed_queries_env(
     _is_eval_env: bool = False,
     **kwargs,
 ):
+    def generateQueryState():
+        state = -np.ones((5,5), dtype=np.int)
+        x1, y1 = np.random.choice(5, 2)
+        state[x1][y1] = 0
+        x2, y2 = np.random.choice(5, 2)
+        while state[x2][y2] == 0 :
+            x2, y2 = np.random.choice(5, 2)
+        state[x2][y2] = 1
+        return state
 
     env = MarkovGameEnv(episode_length=episode_length, memory=True, small_memory=small_memory)
     if small_memory:
-        qu = {"q0": 0, "q1": 1, "q2": 2}
+        q0 = generateQueryState()
+        q1 = generateQueryState()
+        q2 = generateQueryState()
+        qu = {"q0": q0, "q1": q1, "q2": q2}
     else:
-        qu = {"q0": 0, "q1": 1, "q2": 2, "q3": 3, "q4": 4}
+        q0 = generateQueryState()
+        q1 = generateQueryState()
+        q2 = generateQueryState()
+        q3 = generateQueryState()
+        q4 = generateQueryState()
+
+        qu = {"q0": q0, "q1": q1, "q2": q2, "q3": q3, "q4": q4}
     env = ObservedQueriesWrapper(
         env,
         leader_agent_id="agent_0",
@@ -281,9 +300,9 @@ def make_markov_observed_queries_env(
         hidden_queries=hidden_queries,
     )
     if discrete_obs:
-        env = DictToDiscreteObsWrapper(env, agent_id="agent_1")
+        env = DictToGridObsWrapper(env, agent_id="agent_1")
         if tell_leader:
-            env = DictToDiscreteObsWrapper(env, agent_id="agent_0")
+            env = DictToGridObsWrapper(env, agent_id="agent_0")
     if hypernetwork:
         env = RepeatedMatrixHypernetworkWrapper(env)
     return env
