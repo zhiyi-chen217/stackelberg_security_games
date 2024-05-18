@@ -292,12 +292,16 @@ def make_markov_observed_queries_env(
         q1 = generateQueryState(x1=3, y1=4, x2=1, y2=0)
         q2 = generateQueryState(x1=4, y1=3, x2=0, y2=1)
         q3 = generateQueryState(x1=3, y1=3, x2=1, y2=1)
-        q4 = generateQueryState(x1=2, y1=3, x2=2, y2=1)
-        q5 = generateQueryState(x1=2, y1=2, x2=0, y2=1)
-        q6 = generateQueryState(x1=2, y1=1, x2=2, y2=0)
-        q7 = generateQueryState(x1=2, y1=3, x2=3, y2=0)
 
-        qu = {"q0": q0, "q1": q1, "q2": q2, "q3": q3, "q4": q4, "q5": q5, "q6": q6, "q7": q7}
+        q4 = generateQueryState(x1=0, y1=0, x2=4, y2=4)
+        q5 = generateQueryState(x1=1, y1=0, x2=3, y2=4)
+        q6 = generateQueryState(x1=0, y1=1, x2=4, y2=3)
+        q7 = generateQueryState(x1=1, y1=1, x2=3, y2=3)
+
+        q8 = generateQueryState(x1=1, y1=1, x2=2, y2=3)
+        q9 = generateQueryState(x1=1, y1=2, x2=2, y2=4)
+
+        qu = {"q0": q0, "q1": q1, "q2": q2, "q3": q3, "q4": q4, "q5": q5, "q6": q6, "q7": q7, "q8": q8, "q9": q9}
     env = ObservedQueriesWrapper(
         env,
         leader_agent_id="agent_0",

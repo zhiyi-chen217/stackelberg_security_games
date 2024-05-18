@@ -73,25 +73,51 @@ class MarkovGameEnv(MultiAgentEnv):
 
                And must set up the environment so that render(), step(), and observe() can be called without issues.
                """
+        # randomized setting
+        # self.agents = copy(self.possible_agents)
+        # self.timestep = 0
+        # self.current_step = 0
+        #
+        # state = -np.ones((5, 5), dtype=np.int)
+        # self.guard_x, self.guard_y = np.random.choice(5, 2)
+        # state[self.guard_x][self.guard_y] = 0
+        #
+        # self.prisoner_x, self.prisoner_y = np.random.choice(5, 2)
+        # while state[self.prisoner_x][self.prisoner_y] == 0:
+        #     self.prisoner_x, self.prisoner_y = np.random.choice(5, 2)
+        # state[self.prisoner_x][self.prisoner_y] = 1
         self.agents = copy(self.possible_agents)
         self.timestep = 0
         self.current_step = 0
+        p = np.random.rand()
+        if p > 0.5:
 
-        state = -np.ones((5, 5), dtype=np.int)
-        self.guard_x, self.guard_y = np.random.choice(5, 2)
-        state[self.guard_x][self.guard_y] = 0
+            self.prisoner_x = 0
+            self.prisoner_y = 0
 
-        self.prisoner_x, self.prisoner_y = np.random.choice(5, 2)
-        while state[self.prisoner_x][self.prisoner_y] == 0:
-            self.prisoner_x, self.prisoner_y = np.random.choice(5, 2)
-        state[self.prisoner_x][self.prisoner_y] = 1
+            self.guard_x = 4
+            self.guard_y = 4
+        else:
+            self.prisoner_x = 4
+            self.prisoner_y = 4
 
+            self.guard_x = 0
+            self.guard_y = 0
+
+        self.escape_x = 2
+        self.escape_y = 2
+
+        reset_state = -np.ones((5, 5))
+        reset_state[self.guard_x][self.guard_y] = 0
+        reset_state[self.prisoner_x][self.prisoner_y] = 1
+        # Get dummy infos. Necessary for proper parallel_to_aec conversion
+        infos = {a: reset_state for a in self.agents}
 
         self.escape_x = 2
         self.escape_y = 2
 
         # Get dummy infos. Necessary for proper parallel_to_aec conversion
-        infos = {a: state for a in self.agents}
+        infos = {a: reset_state for a in self.agents}
 
         return infos
     def step(self, actions):
