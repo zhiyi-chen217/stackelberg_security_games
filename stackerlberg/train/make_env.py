@@ -265,30 +265,39 @@ def make_markov_observed_queries_env(
     _is_eval_env: bool = False,
     **kwargs,
 ):
-    def generateQueryState():
+    def generateQueryState(x1=None, y1=None, x2=None, y2=None):
         state = -np.ones((5,5), dtype=np.int)
-        x1, y1 = np.random.choice(5, 2)
-        state[x1][y1] = 0
-        x2, y2 = np.random.choice(5, 2)
-        while state[x2][y2] == 0 :
+        if x1 is None or y1 is None:
+            x1, y1 = np.random.choice(5, 2)
+            state[x1][y1] = 0
+        else:
+            state[x1][y1] = 0
+        if x2 is None or y2 is None:
             x2, y2 = np.random.choice(5, 2)
-        state[x2][y2] = 1
+            while state[x2][y2] == 0 :
+                x2, y2 = np.random.choice(5, 2)
+            state[x2][y2] = 1
+        else:
+            state[x2][y2] = 1
         return state
 
     env = MarkovGameEnv(episode_length=episode_length, memory=True, small_memory=small_memory)
     if small_memory:
-        q0 = generateQueryState()
-        q1 = generateQueryState()
-        q2 = generateQueryState()
+        q0 = generateQueryState(x1=4, y1=4, x2=0, y2=0)
+        q1 = generateQueryState(x1=3, y1=4, x2=1, y2=0)
+        q2 = generateQueryState(x1=4, y1=3, x2=0, y2=1)
         qu = {"q0": q0, "q1": q1, "q2": q2}
     else:
-        q0 = generateQueryState()
-        q1 = generateQueryState()
-        q2 = generateQueryState()
-        q3 = generateQueryState()
-        q4 = generateQueryState()
+        q0 = generateQueryState(x1=4, y1=4, x2=0, y2=0)
+        q1 = generateQueryState(x1=3, y1=4, x2=1, y2=0)
+        q2 = generateQueryState(x1=4, y1=3, x2=0, y2=1)
+        q3 = generateQueryState(x1=3, y1=3, x2=1, y2=1)
+        q4 = generateQueryState(x1=2, y1=3, x2=2, y2=1)
+        q5 = generateQueryState(x1=2, y1=2, x2=0, y2=1)
+        q6 = generateQueryState(x1=2, y1=1, x2=2, y2=0)
+        q7 = generateQueryState(x1=2, y1=3, x2=3, y2=0)
 
-        qu = {"q0": q0, "q1": q1, "q2": q2, "q3": q3, "q4": q4}
+        qu = {"q0": q0, "q1": q1, "q2": q2, "q3": q3, "q4": q4, "q5": q5, "q6": q6, "q7": q7}
     env = ObservedQueriesWrapper(
         env,
         leader_agent_id="agent_0",

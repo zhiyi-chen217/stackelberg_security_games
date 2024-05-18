@@ -76,20 +76,22 @@ class MarkovGameEnv(MultiAgentEnv):
         self.agents = copy(self.possible_agents)
         self.timestep = 0
         self.current_step = 0
-        self.prisoner_x = 0
-        self.prisoner_y = 0
 
-        self.guard_x = 4
-        self.guard_y = 4
+        state = -np.ones((5, 5), dtype=np.int)
+        self.guard_x, self.guard_y = np.random.choice(5, 2)
+        state[self.guard_x][self.guard_y] = 0
+
+        self.prisoner_x, self.prisoner_y = np.random.choice(5, 2)
+        while state[self.prisoner_x][self.prisoner_y] == 0:
+            self.prisoner_x, self.prisoner_y = np.random.choice(5, 2)
+        state[self.prisoner_x][self.prisoner_y] = 1
+
 
         self.escape_x = 2
         self.escape_y = 2
 
-        reset_state = -np.ones((5, 5))
-        reset_state[0][0] = 0
-        reset_state[4][4] = 1
         # Get dummy infos. Necessary for proper parallel_to_aec conversion
-        infos = {a: reset_state for a in self.agents}
+        infos = {a: state for a in self.agents}
 
         return infos
     def step(self, actions):
@@ -125,7 +127,8 @@ class MarkovGameEnv(MultiAgentEnv):
         elif self.prisoner_x == self.escape_x and self.prisoner_y == self.escape_y:
             rewards = {"agent_1": 10, "agent_0": -10}
             terminations = {a: True for a in self.agents}
-
+        else:
+            rewards = {"agent_1": -1, "agent_0": -1}
         # Check truncation conditions (overwrites termination conditions)
         truncations = {a: False for a in self.agents}
         if self.timestep == self.episode_length - 1:
@@ -144,11 +147,12 @@ class MarkovGameEnv(MultiAgentEnv):
 
         # Get dummy infos (not used in this example)
         infos = {a: {} for a in self.agents}
-
+        finish = {"__all__": False}
         if any(terminations.values()) or all(truncations.values()):
+            finish = {"__all__": True }
             self.reset()
 
-        return observations, rewards, {"__all__": True if self.current_step >= self.episode_length else False}, {}
+        return observations, rewards, finish, {}
     # def step(self, actions):
     #
     #     if self.memory is False:
