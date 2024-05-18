@@ -30,12 +30,12 @@ def randomise_leader_policy_each_episode(leader_policy_id: str = "agent_0", skip
                 for key in cur_weights:
                     if skip_bias and "bias" in key:
                         continue
-                    cur_weights[key] = np.random.uniform(low=-1, high=1, size=cur_weights[key].shape)
+                    cur_weights[key] = np.random.uniform(low=-0.01, high=0.01, size=cur_weights[key].shape)
             elif isinstance(cur_weights, list):
                 if skip_bias:
                     print("Warning: skip_bias is not implemented for list weights")
                 for i in range(len(cur_weights)):
-                    cur_weights[i] = np.random.uniform(low=-1, high=1, size=cur_weights[i].shape)
+                    cur_weights[i] = np.random.uniform(low=-0.01, high=0.01, size=cur_weights[i].shape)
             else:
                 raise ValueError("Weights are neither a dict nor a list!")
             policies[leader_policy_id].set_weights(cur_weights)
