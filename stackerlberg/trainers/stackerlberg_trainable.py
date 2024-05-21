@@ -204,7 +204,7 @@ def stackerlberg_trainable(config):
         # Optionally, do a pre-training phase to check we are actually in equilibrium.
         # Train follower
         for pre_training_iteration in range(config.get("pre_training_iterations", 0)):
-            # Callback
+            # Callbackwand
             for callback in callbacks["pre-pretrain"]:
                 callback(
                     leader_trainer=leader_trainer,
@@ -334,6 +334,17 @@ def stackerlberg_trainable(config):
                     results=results,
                 )
         # -------- Outer Loop Done --------
+        if True:
+            config[
+                "leadertrain_save_checkpoint_leader"
+            ] = f"leadertrain_leader_checkpoint_{config['common_config']['env_config'].get('matrix_name','unkown_matrix')}_{config['seed']}.pkl"
+            config[
+                "leadertrain_save_checkpoint_follower"
+            ] = f"leadertrain_follower_checkpoint_{config['common_config']['env_config'].get('matrix_name', 'unkown_matrix')}_{config['seed']}.pkl"
+            with open(config["leadertrain_save_checkpoint_leader"], "wb") as f:
+                pickle.dump(leader_trainer.get_weights(leader_agent_id), f)
+            with open(config["leadertrain_save_checkpoint_follower"], "wb") as f:
+                pickle.dump(leader_trainer.get_weights(follower_agent_ids), f)
 
         # Optionally, do a post-training phase to check we are actually in equilibrium.
         # Copy leader weights into follower trainer

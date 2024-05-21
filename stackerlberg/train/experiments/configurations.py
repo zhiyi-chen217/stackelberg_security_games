@@ -14,7 +14,8 @@ from ray.rllib.models.torch.complex_input_net import ComplexInputNetwork
 from ray.rllib.models.torch.fcnet import FullyConnectedNetwork
 
 from stackerlberg.envs.matrix_game import named_matrix_games
-from stackerlberg.models.cnn_torch_model import CNNTorchModel
+from stackerlberg.models.cnn_torch_model_poacher import CNNPoacherTorchModel
+from stackerlberg.models.cnn_torch_model_patroller import CNNPatrollerTorchModel
 from stackerlberg.models.custom_fully_connected_torch_network import (
     CustomFullyConnectedNetwork,
 )
@@ -33,6 +34,80 @@ from stackerlberg.trainers.stackerlberg_trainable_es import stackerlberg_trainab
 
 experiment_configurations = {
     # --- All matrices, big figure in main text --- #
+"ipd_gsg_ppo_ppo": {
+        "configuration": {
+            "common_config": {
+                "env": "gsg_stackelberg_observed_queries",
+                "env_config": {
+                    "discrete_obs": True,
+                    "small_memory": False,
+                    "episode_length": 10,
+                    "memory": False,
+                },
+                "batch_mode": "complete_episodes",
+            },
+            "seed": tune.grid_search([1, 2, 3]),
+            "deterministic_leader": True,
+            "deterministic_follower": True,
+            "leader_algorithm": PPO,
+            "leader_policy_class": PPOTorchPolicy,
+            "leader_config": {
+                "lr": 0.01,
+                "entropy_coeff": 0.0,
+                "min_sample_timesteps_per_iteration": 100,
+                "metrics_smoothing_episodes": 1,
+                "rollout_fragment_length": 1000,
+                "train_batch_size": 500,
+                "sgd_minibatch_size": 100,
+                "evaluation_interval": 1,
+                "evaluation_duration": 10,
+                "evaluation_duration_unit": "episodes",
+                "learning_starts": 0,
+            },
+            "leader_policy_config": {
+                "model": {
+                    "fcnet_hiddens": [],
+                    "vf_share_layers": True,
+                    "custom_model": CNNPatrollerTorchModel,
+                },
+            },
+            "follower_algorithm": PPO,
+            "follower_policy_class": PPOTorchPolicy,
+            "follower_policy_config": {
+                "model": {
+                    "fcnet_hiddens": [],
+                    "vf_share_layers": True,
+                    "custom_model": CNNPoacherTorchModel,
+                },
+            },
+            "follower_config": {
+                "lr": 0.01,
+                "min_sample_timesteps_per_iteration": 100,
+                "metrics_smoothing_episodes": 1,
+                "rollout_fragment_length": 100,
+                "train_batch_size": 500,
+                "sgd_minibatch_size": 100,
+                "evaluation_interval": 1,
+                "evaluation_duration": 10,
+                "evaluation_duration_unit": "episodes",
+                "learning_starts": 0,
+            },
+            "pre_training_iterations": 0,
+            "pre_training_stop_on_optimal": True,
+            "inner_iterations_follower": 5,
+            "inner_iterations_leader": 5,
+            "outer_iterations": 300,
+            "post_training_iterations": 100,
+            "randomize_leader": True,
+            "pretrain_save_checkpoint": "auto",
+            # "_debug_dont_train_leader": True,
+            "callbacks": {
+            },
+            "log_weights": True,
+        },
+        "success_condition": lambda results: results["leader_results"]["evaluation"]["policy_reward_mean"][
+                                                 "agent_0"] > 0,
+    },
     "ipd_allmatrices_ppo_pg": {
         "configuration": {
             "common_config": {
@@ -58,7 +133,7 @@ experiment_configurations = {
                 "metrics_smoothing_episodes": 1,
                 "rollout_fragment_length": 1000,
                 "train_batch_size": 1000,
-                "sgd_minibatch_size": 1000,
+                "sgd_minibatch_size": 100,
                 "evaluation_interval": 1,
                 "evaluation_duration": 10,
                 "evaluation_duration_unit": "episodes",
@@ -91,9 +166,9 @@ experiment_configurations = {
                 "evaluation_duration_unit": "episodes",
                 "learning_starts": 0,
             },
-            "pre_training_iterations": 500,
+            "pre_training_iterations": 0,
             "pre_training_stop_on_optimal": True,
-            "inner_iterations_follower": 0,
+            "inner_iterations_follower": 1,
             "inner_iterations_leader": 1,
             "outer_iterations": 500,
             "post_training_iterations": 50,
@@ -106,6 +181,80 @@ experiment_configurations = {
             "log_weights": True,
         },
         "success_condition": lambda results: results["leader_results"]["evaluation"]["policy_reward_mean"]["agent_0"] >= 6.0,
+    },
+    "ipd_markov_ppo_ppo": {
+        "configuration": {
+            "common_config": {
+                "env": "markov_game_stackelberg_observed_queries",
+                "env_config": {
+                    "discrete_obs": True,
+                    "small_memory": False,
+                    "episode_length": 10,
+                    "memory": False,
+                },
+                "batch_mode": "complete_episodes",
+            },
+            "seed": tune.grid_search([1, 2, 3]),
+            "deterministic_leader": True,
+            "deterministic_follower": True,
+            "leader_algorithm": PPO,
+            "leader_policy_class": PPOTorchPolicy,
+            "leader_config": {
+                "lr": 0.01,
+                "entropy_coeff": 0.0,
+                "min_sample_timesteps_per_iteration": 100,
+                "metrics_smoothing_episodes": 1,
+                "rollout_fragment_length": 1000,
+                "train_batch_size": 500,
+                "sgd_minibatch_size": 100,
+                "evaluation_interval": 1,
+                "evaluation_duration": 10,
+                "evaluation_duration_unit": "episodes",
+                "learning_starts": 0,
+            },
+            "leader_policy_config": {
+                "model": {
+                    "fcnet_hiddens": [],
+                    "vf_share_layers": True,
+                    "custom_model": LinearTorchModel,
+                },
+            },
+            "follower_algorithm": PPO,
+            "follower_policy_class": PPOTorchPolicy,
+            "follower_policy_config": {
+                "model": {
+                    "fcnet_hiddens": [],
+                    "vf_share_layers": True,
+                    "custom_model": LinearTorchModel,
+                },
+            },
+            "follower_config": {
+                "lr": 0.01,
+                "min_sample_timesteps_per_iteration": 100,
+                "metrics_smoothing_episodes": 1,
+                "rollout_fragment_length": 100,
+                "train_batch_size": 500,
+                "sgd_minibatch_size": 100,
+                "evaluation_interval": 1,
+                "evaluation_duration": 10,
+                "evaluation_duration_unit": "episodes",
+                "learning_starts": 0,
+            },
+            "pre_training_iterations": 0,
+            "pre_training_stop_on_optimal": True,
+            "inner_iterations_follower": 5,
+            "inner_iterations_leader": 5,
+            "outer_iterations": 300,
+            "post_training_iterations": 100,
+            "randomize_leader": True,
+            "pretrain_save_checkpoint": "auto",
+            # "_debug_dont_train_leader": True,
+            "callbacks": {
+            },
+            "log_weights": True,
+        },
+        "success_condition": lambda results: results["leader_results"]["evaluation"]["policy_reward_mean"][
+                                                 "agent_0"] > 0,
     },
     "ipd_markov_ppo_pg": {
         "configuration": {
@@ -125,13 +274,13 @@ experiment_configurations = {
             "leader_algorithm": PPO,
             "leader_policy_class": PPOTorchPolicy,
             "leader_config": {
-                "lr": 0.008,
+                "lr": 0.01,
                 "entropy_coeff": 0.0,
                 "min_sample_timesteps_per_iteration": 100,
                 "metrics_smoothing_episodes": 1,
                 "rollout_fragment_length": 1000,
                 "train_batch_size": 1000,
-                "sgd_minibatch_size": 1000,
+                "sgd_minibatch_size": 100,
                 "evaluation_interval": 1,
                 "evaluation_duration": 10,
                 "evaluation_duration_unit": "episodes",

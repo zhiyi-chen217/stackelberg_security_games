@@ -1,6 +1,7 @@
 import numpy as np
 from ray.tune.registry import register_env as ray_register_env
 from stackerlberg.envs.markov_game import MarkovGameEnv
+from stackerlberg.envs.gsg_i import GSGEnv, make_args
 from stackerlberg.envs.matrix_game import MatrixGameEnv, StochasticRewardWrapper
 from stackerlberg.envs.test_envs import ThreadedTestEnv, ThreadedTestWrapper
 from stackerlberg.wrappers.action_to_dist_wrapper import ActionToDistWrapper
@@ -29,11 +30,12 @@ def register_env(name_or_function=None):
         def env_creator_kwargs(env_config):
             return name_or_function(**env_config)
 
-        ray_register_env(n, env_creator_kwargself.sizes)
+        ray_register_env(n, env_creator_kwargs)
         return name_or_function
     else:
         # Else we should have gotten a name string, so we return a decorator.
         def _register_env(function):
+
             if name_or_function is None:
                 n = function.__name__
             else:
@@ -325,6 +327,51 @@ def make_markov_observed_queries_env(
     if hypernetwork:
         env = RepeatedMatrixHypernetworkWrapper(env)
     return env
+
+@register_env("gsg_stackelberg_observed_queries")
+def make_gsg_observed_queries_env(
+    episode_length: int = 100,
+    n_samples: int = 1,
+    samples_summarize: str = "list",
+    matrix_name: str = "prisoners_dilemma",
+    matrix: np.ndarray = [],
+    hypernetwork: bool = False,
+    discrete_obs: bool = False,
+    small_memory: bool = False,
+    tell_leader: bool = False,
+    tell_leader_mock: bool = False,
+    hidden_queries: bool = False,
+    _deepmind: bool = True,
+    _is_eval_env: bool = False,
+    **kwargs,
+):
+    from stackerlberg.envs.maps import generate_map
+    args = make_args()
+    animal_density = generate_map(args)
+    env = GSGEnv(args, animal_density=animal_density, episode_length=episode_length)
+    if small_memory:
+
+        qu = {}
+    else:
+        qu = {}
+    env = ObservedQueriesWrapper(
+        env,
+        leader_agent_id="agent_0",
+        queries=qu,
+        n_samples=n_samples,
+        samples_summarize=samples_summarize,
+        tell_leader=tell_leader,
+        tell_leader_mock=tell_leader_mock,
+        hidden_queries=hidden_queries,
+    )
+    # if discrete_obs:
+    #     env = DictToGridObsWrapper(env, agent_id="agent_1")
+    #     if tell_leader:
+    #         env = DictToGridObsWrapper(env, agent_id="agent_0")
+    if hypernetwork:
+        env = RepeatedMatrixHypernetworkWrapper(env)
+    return env
+
 @register_env("repeated_matrix_game_stackelberg_observed_queries")
 def make_repeated_matrix_observed_queries_env(
     episode_length: int = 10,
