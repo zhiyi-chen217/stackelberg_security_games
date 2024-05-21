@@ -26,7 +26,7 @@ class LinearTorchModel(TorchModelV2, nn.Module):
         self._model_l2 = nn.Linear(int(np.product(obs_space.shape)) // 2, num_outputs, bias=False)
         self._value_l1 = nn.Linear(int(np.product(obs_space.shape)), int(np.product(obs_space.shape)) // 2, bias=False)
         self._value_l2 = nn.Linear(int(np.product(obs_space.shape)) // 2, 1, bias=False)
-        self.activation = nn.Sigmoid()
+        self.activation = nn.GELU()
         if model_config.get("custom_model_config", {}).get("constant_init", False):
             torch.nn.init.constant_(self._model_l1.weight, 0.01)
             torch.nn.init.constant_(self._model_l2.weight, 0.01)
