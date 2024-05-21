@@ -19,6 +19,7 @@ class MarkovGameEnv(MultiAgentEnv):
         memory: bool = False,
         small_memory: bool = False,
         reward_offset: float = 0,
+        size: float = 5,
         **kwargs,
     ):
         """Creates a simple matrix game.
@@ -32,15 +33,16 @@ class MarkovGameEnv(MultiAgentEnv):
         self._agent_ids = {"agent_0", "agent_1"}
         self.action_space = spaces.Dict(
             {
-                "agent_0": spaces.Discrete(4),
-                "agent_1": spaces.Discrete(4),
+                "agent_0": spaces.Discrete(5),
+                "agent_1": spaces.Discrete(5),
             }
         )
+        self.size = size
         self.memory = memory
         self.small_memory = small_memory
         self.observation_space = spaces.Dict({
-                "agent_0": spaces.Box(low=-1.0, high=1.0, shape=(5, 5), dtype=np.int),
-                "agent_1": spaces.Box(low=-1.0, high=1.0, shape=(5, 5), dtype=np.int),
+                "agent_0": spaces.Box(low=-1.0, high=1.0, shape=(self.size, self.size), dtype=np.int),
+                "agent_1": spaces.Box(low=-1.0, high=1.0, shape=(self.size, self.size), dtype=np.int),
             })
         # self.observation_space = spaces.Dict({
         #     "agent_0":  spaces.Discrete(81),
@@ -95,26 +97,21 @@ class MarkovGameEnv(MultiAgentEnv):
             self.prisoner_x = 0
             self.prisoner_y = 0
 
-            self.guard_x = 4
-            self.guard_y = 4
+            self.guard_x = self.size - 1
+            self.guard_y = self.size - 1
         else:
-            self.prisoner_x = 4
-            self.prisoner_y = 4
+            self.prisoner_x = self.size - 1
+            self.prisoner_y = self.size - 1
 
             self.guard_x = 0
             self.guard_y = 0
 
-        self.escape_x = 2
-        self.escape_y = 2
+        self.escape_x = self.size // 2
+        self.escape_y = self.size // 2
 
-        reset_state = -np.ones((5, 5))
+        reset_state = -np.ones((self.size, self.size), dtype=np.int)
         reset_state[self.guard_x][self.guard_y] = 0
         reset_state[self.prisoner_x][self.prisoner_y] = 1
-        # Get dummy infos. Necessary for proper parallel_to_aec conversion
-        infos = {a: reset_state for a in self.agents}
-
-        self.escape_x = 2
-        self.escape_y = 2
 
         # Get dummy infos. Necessary for proper parallel_to_aec conversion
         infos = {a: reset_state for a in self.agents}
@@ -124,37 +121,71 @@ class MarkovGameEnv(MultiAgentEnv):
         # Execute actions
         prisoner_action = actions["agent_1"]
         guard_action = actions["agent_0"]
+        rewards = {a: 0 for a in self.agents}
         self.current_step += 1
-        if prisoner_action == 0 and self.prisoner_x > 0:
-            self.prisoner_x -= 1
-        elif prisoner_action == 1 and self.prisoner_x < 4:
-            self.prisoner_x += 1
-        elif prisoner_action == 2 and self.prisoner_y > 0:
-            self.prisoner_y -= 1
-        elif prisoner_action == 3 and self.prisoner_y < 4:
-            self.prisoner_y += 1
+        if prisoner_action == 0 :
+            if self.prisoner_x > 0:
+                self.prisoner_x -= 1
+            else:
+                rewards["agent_1"] -= 1
+        elif prisoner_action == 1:
+            if self.prisoner_x < self.size - 1:
+                self.prisoner_x += 1
+            else:
+                rewards["agent_1"] -= 1
+        elif prisoner_action == 2:
+            if self.prisoner_y > 0:
+                self.prisoner_y -= 1
+            else:
+                rewards["agent_1"] -= 1
+        elif prisoner_action == 3:
+            if self.prisoner_y < self.size - 1:
+                self.prisoner_y += 1
+            else:
+                rewards["agent_1"] -= 1
+        elif prisoner_action == 4:
+            self.prisoner_x += 0
+            self.prisoner_y += 0
+            rewards["agent_1"] -= 1
 
-        if guard_action == 0 and self.guard_x > 0:
-            self.guard_x -= 1
-        elif guard_action == 1 and self.guard_x < 4:
-            self.guard_x += 1
-        elif guard_action == 2 and self.guard_y > 0:
-            self.guard_y -= 1
-        elif guard_action == 3 and self.guard_y < 4:
-            self.guard_y += 1
+        if guard_action == 0:
+            if self.guard_x > 0:
+                self.guard_x -= 1
+            else:
+                rewards["agent_0"] -= 1
+        elif guard_action == 1:
+            if self.guard_x < self.size - 1:
+                self.guard_x += 1
+            else:
+                rewards["agent_0"] -= 1
+        elif guard_action == 2:
+            if self.guard_y > 0:
+                self.guard_y -= 1
+            else:
+                rewards["agent_0"] -= 1
+        elif guard_action == 3:
+            if self.guard_y < self.size - 1:
+                self.guard_y += 1
+            else:
+                rewards["agent_0"] -= 1
+        elif guard_action == 4:
+            self.guard_x += 0
+            self.guard_y += 0
+            rewards["agent_0"] -= 1
 
         # Check termination conditions
         terminations = {a: False for a in self.agents}
-        rewards = {a: 0 for a in self.agents}
+
         if self.prisoner_x == self.guard_x and self.prisoner_y == self.guard_y:
-            rewards = {"agent_1": -10, "agent_0": 10}
+            rewards["agent_1"] -= 10
+            rewards["agent_1"] += 10
             terminations = {a: True for a in self.agents}
 
         elif self.prisoner_x == self.escape_x and self.prisoner_y == self.escape_y:
-            rewards = {"agent_1": 10, "agent_0": -10}
+            rewards["agent_1"] += 10
+            rewards["agent_1"] -= 10
             terminations = {a: True for a in self.agents}
-        else:
-            rewards = {"agent_1": -1, "agent_0": -1}
+
         # Check truncation conditions (overwrites termination conditions)
         truncations = {a: False for a in self.agents}
         if self.timestep == self.episode_length - 1:
@@ -162,7 +193,7 @@ class MarkovGameEnv(MultiAgentEnv):
             truncations = {"agent_1": True, "agent_0": True}
         self.timestep += 1
 
-        obs = -np.ones((5, 5))
+        obs = -np.ones((self.size, self.size), dtype=np.int)
         obs[self.guard_x][self.guard_y] = 0
         obs[self.prisoner_x][self.prisoner_y] = 1
         # Get observations

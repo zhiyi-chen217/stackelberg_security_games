@@ -29,7 +29,7 @@ def register_env(name_or_function=None):
         def env_creator_kwargs(env_config):
             return name_or_function(**env_config)
 
-        ray_register_env(n, env_creator_kwargs)
+        ray_register_env(n, env_creator_kwargself.sizes)
         return name_or_function
     else:
         # Else we should have gotten a name string, so we return a decorator.
@@ -265,43 +265,49 @@ def make_markov_observed_queries_env(
     _is_eval_env: bool = False,
     **kwargs,
 ):
-    def generateQueryState(x1=None, y1=None, x2=None, y2=None):
-        state = -np.ones((5,5), dtype=np.int)
+    def generateQueryState(size=5, x1=None, y1=None, x2=None, y2=None):
+        state = -np.ones((size, size), dtype=np.int)
         if x1 is None or y1 is None:
-            x1, y1 = np.random.choice(5, 2)
+            x1, y1 = np.random.choice(size, 2)
             state[x1][y1] = 0
         else:
             state[x1][y1] = 0
         if x2 is None or y2 is None:
-            x2, y2 = np.random.choice(5, 2)
+            x2, y2 = np.random.choice(size, 2)
             while state[x2][y2] == 0 :
-                x2, y2 = np.random.choice(5, 2)
+                x2, y2 = np.random.choice(size, 2)
             state[x2][y2] = 1
         else:
             state[x2][y2] = 1
         return state
 
-    env = MarkovGameEnv(episode_length=episode_length, memory=True, small_memory=small_memory)
+    env = MarkovGameEnv(episode_length=episode_length, memory=True, small_memory=small_memory, size=5)
+    q0 = generateQueryState(size=3, x1=0, y1=0, x2=0, y2=2)
+    q1 = generateQueryState(size=3, x1=0, y1=0, x2=2, y2=0)
+    q2 = generateQueryState(size=3, x1=0, y1=0, x2=1, y2=1)
+    q3 = generateQueryState(size=3, x1=0, y1=1, x2=0, y2=0)
+    q4 = generateQueryState(size=3, x1=1, y1=0, x2=1, y2=1)
+    q5 = generateQueryState(size=3, x1=2, y1=0, x2=2, y2=1)
+    q6 = generateQueryState(size=3, x1=0, y1=1, x2=2, y2=0)
+    q7 = generateQueryState(size=3, x1=1, y1=0, x2=0, y2=2)
+    q8 = generateQueryState(size=3, x1=2, y1=1, x2=1, y2=1)
     if small_memory:
-        q0 = generateQueryState(x1=4, y1=4, x2=0, y2=0)
-        q1 = generateQueryState(x1=3, y1=4, x2=1, y2=0)
-        q2 = generateQueryState(x1=4, y1=3, x2=0, y2=1)
-        qu = {"q0": q0, "q1": q1, "q2": q2}
+
+        qu = {}
     else:
-        q0 = generateQueryState(x1=4, y1=4, x2=0, y2=0)
-        q1 = generateQueryState(x1=3, y1=4, x2=1, y2=0)
-        q2 = generateQueryState(x1=4, y1=3, x2=0, y2=1)
-        q3 = generateQueryState(x1=3, y1=3, x2=1, y2=1)
-
-        q4 = generateQueryState(x1=0, y1=0, x2=4, y2=4)
-        q5 = generateQueryState(x1=1, y1=0, x2=3, y2=4)
-        q6 = generateQueryState(x1=0, y1=1, x2=4, y2=3)
-        q7 = generateQueryState(x1=1, y1=1, x2=3, y2=3)
-
-        q8 = generateQueryState(x1=1, y1=1, x2=2, y2=3)
-        q9 = generateQueryState(x1=1, y1=2, x2=2, y2=4)
-
-        qu = {"q0": q0, "q1": q1, "q2": q2, "q3": q3, "q4": q4, "q5": q5, "q6": q6, "q7": q7, "q8": q8, "q9": q9}
+        # q0 = generateQueryState(x1=4, y1=4, x2=0, y2=0)
+        # q1 = generateQueryState(x1=3, y1=4, x2=1, y2=0)
+        # q2 = generateQueryState(x1=4, y1=3, x2=0, y2=1)
+        # q3 = generateQueryState(x1=3, y1=3, x2=1, y2=1)
+        #
+        # q4 = generateQueryState(x1=0, y1=0, x2=4, y2=4)
+        # q5 = generateQueryState(x1=1, y1=0, x2=3, y2=4)
+        # q6 = generateQueryState(x1=0, y1=1, x2=4, y2=3)
+        # q7 = generateQueryState(x1=1, y1=1, x2=3, y2=3)
+        #
+        # q8 = generateQueryState(x1=1, y1=1, x2=2, y2=3)
+        # q9 = generateQueryState(x1=1, y1=2, x2=2, y2=4)
+        qu = {}
     env = ObservedQueriesWrapper(
         env,
         leader_agent_id="agent_0",
