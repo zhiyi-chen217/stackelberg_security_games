@@ -24,7 +24,7 @@ from stackerlberg.trainers.callbacks import (
     DeleteHiddenQueriesPrePostprocessCallback,
     PolicyIntoEnv,
 )
-from stackerlberg.trainers.utils import randomise_leader_policy_each_episode
+from stackerlberg.trainers.utils import randomise_leader_policy_each_episode, randomize_weights
 from stackerlberg.utils.utils import update_recursively
 
 if TYPE_CHECKING:
@@ -158,7 +158,7 @@ def stackerlberg_trainable(config):
     # Create a config for post-training, before we potentially enable leader randomization!
     posttrain_config = copy.deepcopy(follower_config)
     pretrain_config = copy.deepcopy(follower_config)
-
+    # pretrain_config["env"] = "markov_game_train_stackelberg_observed_queries"
     # Seed unique seeds for each trainer
     leader_config["seed"] += 1000
     follower_config["seed"] += 100000
@@ -166,13 +166,16 @@ def stackerlberg_trainable(config):
     posttrain_config["seed"] += 100
 
     # Randomize leader during follower pre-training?
+
     if config.get("randomize_leader", False):
         if "callbacks" in pretrain_config:
             pretrain_config["callbacks"] = MultiCallbacks(
-                [pretrain_config["callbacks"], randomise_leader_policy_each_episode(leader_agent_id)]
+                [pretrain_config["callbacks"]]
             )
         else:
-            pretrain_config["callbacks"] = randomise_leader_policy_each_episode(leader_agent_id)
+            pretrain_config["callbacks"] = MultiCallbacks(
+                [randomise_leader_policy_each_episode(leader_agent_id)]
+            )
 
     for callback in callbacks["config"]:
         callback(
@@ -217,6 +220,21 @@ def stackerlberg_trainable(config):
             results["pretraining_results"] = pretraining_results
             results["phase"] = 0
 
+            if pre_training_iteration % 10 == 0:
+                new_weights = randomize_weights(leader_trainer.get_weights(leader_agent_id), leader_agent_id)
+                leader_trainer.set_weights(new_weights)
+            else:
+                leader_trainer.set_weights(pre_trainer.get_weights(follower_agent_ids))
+            for i in range(5):
+                pretraining_results = leader_trainer.train()
+                pretraining_results.pop("config", None)
+                results["pretraining_results"] = pretraining_results
+                results["phase"] = 0
+            pre_trainer.set_weights(leader_trainer.get_weights(leader_agent_id))
+
+            fname = f"pretrain_checkpoint_leader_{pre_training_iteration}_{config['seed']}.pkl"
+            with open(fname, "wb") as f:
+                pickle.dump(leader_trainer.get_weights(leader_agent_id), f)
             # Callback
             for callback in callbacks["post-pretrain"]:
                 callback(
@@ -229,6 +247,9 @@ def stackerlberg_trainable(config):
 
             follower_trainer.set_weights(pre_trainer.get_weights(follower_agent_ids))
             leader_trainer.set_weights(pre_trainer.get_weights(follower_agent_ids))
+            new_weights = randomize_weights(leader_trainer.get_weights(leader_agent_id), leader_agent_id)
+            leader_trainer.set_weights(new_weights)
+
             if config.get("log_weights", False):
                 results["pre_weights"] = pre_trainer.get_weights()
             yield results
@@ -334,6 +355,13 @@ def stackerlberg_trainable(config):
                     results=results,
                 )
         # -------- Outer Loop Done --------
+        if "leadertrain_save_checkpoint" in config:
+            if config["leadertrain_save_checkpoint"] == "auto":
+                config[
+                    "leadertrain_save_checkpoint"
+                ] = f"leadertrain_checkpoint_{config['common_config']['env_config'].get('matrix_name','unkown_matrix')}_{config['seed']}.pkl"
+            with open(config["leadertrain_save_checkpoint"], "wb") as f:
+                pickle.dump(leader_trainer.get_weights(leader_agent_id), f)
 
         # Optionally, do a post-training phase to check we are actually in equilibrium.
         # Copy leader weights into follower trainer
@@ -371,7 +399,19 @@ def stackerlberg_trainable(config):
             if config.get("log_weights", False):
                 results["post_weights"] = pre_trainer.get_weights()
             yield results
-
+        # Save weights from pre-training phase
+        if "posttrain_save_checkpoint" in config:
+            if config["posttrain_save_checkpoint"] == "auto":
+                config[
+                    "posttrain_save_checkpoint_leader"
+                ] = f"posttrain_checkpoint_leader_{config['common_config']['env_config'].get('matrix_name','unkown_matrix')}_{config['seed']}.pkl"
+                config[
+                    "posttrain_save_checkpoint_follower"
+                ] = f"posttrain_checkpoint_follower_{config['common_config']['env_config'].get('matrix_name', 'unkown_matrix')}_{config['seed']}.pkl"
+            with open(config["posttrain_save_checkpoint_follower"], "wb") as f:
+                pickle.dump(post_trainer.get_weights(follower_agent_ids), f)
+            with open(config["posttrain_save_checkpoint_leader"], "wb") as f:
+                pickle.dump(post_trainer.get_weights(leader_agent_id), f)
         print("Finished training.")
 
     finally:
@@ -379,3 +419,4 @@ def stackerlberg_trainable(config):
         leader_trainer.stop()
         follower_trainer.stop()
         post_trainer.stop()
+
