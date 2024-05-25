@@ -349,11 +349,10 @@ def make_gsg_observed_queries_env(
     args = make_args()
     animal_density = generate_map(args)
     env = GSGEnv(args, animal_density=animal_density, episode_length=episode_length)
-    if small_memory:
+    qu = {}
+    for i in range(100):
+        qu["q_" + str(i)] = env.observation_space.sample()["agent_0"]
 
-        qu = {}
-    else:
-        qu = {}
     env = ObservedQueriesWrapper(
         env,
         leader_agent_id="agent_0",
@@ -364,10 +363,10 @@ def make_gsg_observed_queries_env(
         tell_leader_mock=tell_leader_mock,
         hidden_queries=hidden_queries,
     )
-    # if discrete_obs:
-    #     env = DictToGridObsWrapper(env, agent_id="agent_1")
-    #     if tell_leader:
-    #         env = DictToGridObsWrapper(env, agent_id="agent_0")
+    if discrete_obs:
+        env = DictToGridObsWrapper(env, agent_id="agent_1")
+        if tell_leader:
+            env = DictToGridObsWrapper(env, agent_id="agent_0")
     if hypernetwork:
         env = RepeatedMatrixHypernetworkWrapper(env)
     return env

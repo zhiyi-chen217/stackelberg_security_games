@@ -33,7 +33,7 @@ class CNNPoacherTorchModel(TorchModelV2, nn.Module):
         in_channels = 22
         out_channels_1 = 16
         out_channels_2 = 32
-        self._model = nn.Sequential(
+        self._obs_emd = nn.Sequential(
             nn.Conv2d(in_channels=in_channels, out_channels=out_channels_1, kernel_size=3, padding=1, stride=1, bias=True),
             nn.BatchNorm2d(out_channels_1),
             nn.ReLU(),
@@ -41,9 +41,8 @@ class CNNPoacherTorchModel(TorchModelV2, nn.Module):
             nn.Conv2d(in_channels=out_channels_1, out_channels=out_channels_2, kernel_size=1, padding=0, stride=1, bias=True),
             nn.BatchNorm2d(out_channels_2),
             nn.AdaptiveMaxPool2d((2, 1)),
-            nn.Flatten(),
-            nn.Linear(out_channels_2*2, num_outputs))
-        self._model.apply(weights_init)
+            nn.Flatten())
+        self._obs_emd.apply(weights_init)
         self._value =  nn.Sequential(
             nn.Conv2d(in_channels=in_channels, out_channels=out_channels_1, kernel_size=3, padding=1, stride=1, bias=True),
             nn.BatchNorm2d(out_channels_1),
@@ -60,15 +59,34 @@ class CNNPoacherTorchModel(TorchModelV2, nn.Module):
         # else:
         #     initializer = normc_initializer(0.01)
         #     initializer(self._value.weight)
-
-
+        self._action_emd = nn.Sequential(nn.Linear(100, 256),
+                                           nn.ReLU(),
+                                           nn.Linear(256, 256),
+                                           nn.ReLU(),
+                                           nn.Linear(256, 128),
+                                           nn.ReLU(),
+                                           nn.Linear(128, 64))
+        self._action_emd.apply(weights_init)
+        self._model = nn.Sequential(nn.Linear(128, 256),
+                                           nn.ReLU(),
+                                           nn.Linear(256, 256),
+                                           nn.ReLU(),
+                                           nn.Linear(256, 128),
+                                           nn.ReLU(),
+                                           nn.Linear(128, num_outputs))
+        self._model.apply(weights_init)
     @override(TorchModelV2)
     def forward(self, input_dict, state, seq_lens):
-        obs = input_dict["obs"]["original_space"]
+        obs = input_dict["obs"]["original_obs"]
         self._obs = obs
+        observed_action = input_dict["obs"]["observed_action"]
         n_batch, n_row, n_col, n_channel = obs.shape
         obs = obs.reshape((n_batch, n_channel, n_row, n_col))
-        return self._model(obs), state
+        obs_embedding = self._obs_emd(obs)
+        action_embedding = self._action_emd(observed_action)
+        embedding = torch.concat([obs_embedding, action_embedding], dim=1)
+        output = self._model(embedding)
+        return output, state
 
     @override(TorchModelV2)
     def value_function(self):

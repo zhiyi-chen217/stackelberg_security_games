@@ -19,26 +19,30 @@ class DictToGridObsWrapper(MultiAgentWrapper):
         self.action_space = copy.deepcopy(env.action_space)
         assert isinstance(env.observation_space[agent_id], spaces.Dict), "DictToDiscreteObsWrapper only works with Dict observation spaces"
 
-        dim = 0
+        self.dim_box = 0
+        self.dim_action = 0
         for obs_type, space in env.observation_space[agent_id].spaces.items():
             if isinstance(space, spaces.Box):
-                dim += space.shape[0] * space.shape[1]
+                self.dim_box = space.shape
             elif isinstance(space, spaces.Discrete):
-                dim += space.n
+                self.dim_action += 1
 
-        self.observation_space[agent_id] = spaces.Box(low=-1, high=1, shape=(dim, ), dtype=np.int)
+        self.observation_space[agent_id] = spaces.Dict({
+            "original_obs": spaces.Box(low=0, high=100.0, shape=self.dim_box, dtype=np.float64),
+            "observed_action": spaces.Box(low=0, high=5, shape=(self.dim_action,), dtype=np.float64)
+        })
 
     def encode_obs(self, obs, agent_id):
-        flatten_obs = []
+        flatten_action = {}
+        observed_action = []
         for obs_type, obs_value in obs.items():
-            if isinstance(obs_value, np.ndarray):
-                flatten_obs.append(obs_value.reshape(-1))
+            if len(obs_value.shape) > 1:
+                flatten_action["original_obs"] = obs_value
             else:
-                actions = np.ones(self.action_space[agent_id].n)
-                actions[obs_value] = 1
-                flatten_obs.append(actions)
-        flatten_obs = np.concatenate(flatten_obs)
-        return flatten_obs
+                observed_action.append(obs_value)
+        observed_action = np.array(observed_action, dtype=np.float64)
+        flatten_action["observed_action"] = observed_action
+        return flatten_action
 
     def reset(self):
         observation = self.env.reset()
